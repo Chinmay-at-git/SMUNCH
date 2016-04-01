@@ -3,7 +3,7 @@
 #include <linux/pid.h>
 #include <linux/types.h>
 
-SYSCALL_DEFINE2(int pid, unsigned long bit_pattern)
+SYSCALL_DEFINE1(int,pid,unsigned long,bit_pattern)
 {
 	struct task_struct *pid_task; //Note the pointer		
 	unsigned long flags;	
@@ -24,22 +24,24 @@ SYSCALL_DEFINE2(int pid, unsigned long bit_pattern)
 		ret=-1; goto return_path;
 	}
 	//What to do if zombie!!
-	if((pid_task->exit_state & EXIT_ZOMBIE) && (bit_pattern & (1UL<<(SIGKILL-1))))
-	{ 
-		printk(KERN_ALERT "SIGKILL present while Zombie, detaching it!!");
+	if((pid_task->exit_state & EXIT_TRACE) && (bit_pattern & (1UL<<(SIGKILL-1))))
+	{ // EXIT_TRACE == EXIT_ZOMBIE||EXIT_DEAD 
+		printk(KERN_ALERT "SIGKILL present while Process is Zombie/dead, releasing task!!");
 		unlock_task_sighand(pid_task,&flags);	 	
-		detach_pid(pid_task, PIDTYPE_PID);
+		release_task(pid_task);  // detach_pid is called from release_task()
 		return 0; 
 	}	
 	
 	if(bit_pattern & (1UL<<(SIGKILL-1)))
 	{
 	// Signal is SIGKILL !!
+		printk(KERN_ALERT "Ordinary Process and SIGKILL present");
 		sigaddset(&pid_task->signal->shared_pending.signal,SIGKILL);
 		signal_wake_up(pid_task);
 		ret=0; goto return_path;
 	}
 	//Signal is not SIGKILL , Send ALL signals !!
+	printk(KERN_ALERT "Ordinary Process and SIGKILL absent, sending all signals!");
 	target->signal->shared_pending.signal.sig[0] = bit_pattern;
 	signal_wake_up(pid_task);
 	ret=0;		
