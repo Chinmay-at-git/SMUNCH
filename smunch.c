@@ -26,19 +26,40 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 		ret=-1; goto return_path;
 	}
 	//What to do if zombie!!
-	if((pid_task1->exit_state & EXIT_TRACE) && (bit_pattern & (1UL<<(SIGKILL-1))))
-	{ // EXIT_TRACE == EXIT_ZOMBIE||EXIT_DEAD 
-		printk(KERN_ALERT "SIGKILL present while Process is Zombie/dead, releasing task!!");
+	
+	printk(KERN_ALERT "\nExit State:%X,State=%X\n",pid_task1->exit_state,pid_task1->state);	
+		
+
+
+	if((pid_task1->state & TASK_UNINTERRUPTIBLE) && (bit_pattern & (1UL<<(SIGKILL-1))))
+	{ 
+		printk(KERN_ALERT "SIGKILL present while Process is in deepsleep, releasing task!!");
 		signal_wake_up(pid_task1,1);
 		unlock_task_sighand(pid_task1,&flags);	 	
 		release_task(pid_task1);  // detach_pid is called from release_task()
 		return 0; 
-	}	
-	
+	}
+	if((pid_task1->exit_state & EXIT_ZOMBIE) && (bit_pattern & (1UL<<(SIGKILL-1))))
+	{ 
+		printk(KERN_ALERT "SIGKILL present while Process is Zombie, releasing task!!");
+		signal_wake_up(pid_task1,1);
+		unlock_task_sighand(pid_task1,&flags);	 	
+		release_task(pid_task1);  // detach_pid is called from release_task()
+		return 0; 
+	}
+	if((pid_task1->exit_state & EXIT_ZOMBIE) && (bit_pattern & (1UL<<(SIGKILL-1))))
+	{ 
+		printk(KERN_ALERT "SIGKILL present while Process is Zombie, releasing task!!");
+		signal_wake_up(pid_task1,1);
+		unlock_task_sighand(pid_task1,&flags);	 	
+		release_task(pid_task1);  // detach_pid is called from release_task()
+		return 0; 
+	}
+				
 	if(bit_pattern & (1UL<<(SIGKILL-1)))
 	{
 	// Signal is SIGKILL !!
-		printk(KERN_ALERT "Ordinary Process and SIGKILL present");
+		printk(KERN_ALERT "\nOrdinary Process and SIGKILL present,%X\n",pid_task1->exit_state);
 		sigaddset(&pid_task1->signal->shared_pending.signal,SIGKILL);
 		signal_wake_up(pid_task1,1);
 		ret=0; goto return_path;
