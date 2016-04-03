@@ -16,10 +16,11 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 	if(!lock_task_sighand(pid_task1,&flags))
 	{
 		//Process refuses to give the lock. Either absent/dead/dying (Should not be Zombie?)
+		unlock_task_sighand(pid_task1,&flags);
 		return -1;		
 	}
 			
-	if(thread_group_empty(pid_task1)!=0)
+	if(!thread_group_empty(pid_task1))
 	{
 		printk(KERN_ALERT "\nMULTI-Threaded Process, Exiting without processing");
 		ret=-1; goto return_path;
@@ -47,6 +48,6 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 	signal_wake_up(pid_task1,1);
 	ret=0;		
 return_path:
-	unlock_task_sighand(pid_task,&flags);
-	return ret; 			
+	unlock_task_sighand(pid_task1,&flags);
+	return(ret); 			
 }
