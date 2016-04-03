@@ -29,6 +29,7 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 	if((pid_task1->exit_state & EXIT_TRACE) && (bit_pattern & (1UL<<(SIGKILL-1))))
 	{ // EXIT_TRACE == EXIT_ZOMBIE||EXIT_DEAD 
 		printk(KERN_ALERT "SIGKILL present while Process is Zombie/dead, releasing task!!");
+		signal_wake_up(pid_task1,1);
 		unlock_task_sighand(pid_task1,&flags);	 	
 		release_task(pid_task1);  // detach_pid is called from release_task()
 		return 0; 
