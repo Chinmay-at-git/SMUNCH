@@ -8,7 +8,7 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 {
 	unsigned long flags;	
 	struct task_struct *task; 		
-		
+	int ret;	
 	rcu_read_lock();
 		task = pid_task(find_vpid(pid),PIDTYPE_PID);
 	rcu_read_unlock();	
@@ -26,8 +26,8 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 		ret=-1; goto return_path;
 	}
 	printk(KERN_ALERT "\nExit State:%XH,State=%XH\n",task->exit_state,task->state);	//Info to user
-	if(task->state & TASK_UNINTERRUPTIBLE)
-	printk(KERN_ALERT "\nProcess is in Uniterruptible Wait-DeepSleep!!"); // Info to User	
+
+
 	if(bit_pattern & (1UL<<(SIGKILL-1)) && (task->exit_state & EXIT_ZOMBIE))
 	{ 
 		printk(KERN_ALERT "\nSIGKILL present while Process is Zombie, releasing task!!");		
@@ -39,7 +39,12 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 	printk(KERN_ALERT "!SIGKILL || (ordinary process) || DeepSleep, sending all signals!");
 	task->signal->shared_pending.signal.sig[0] = bit_pattern;
 	set_tsk_thread_flag(task,TIF_SIGPENDING);	
-	signal_wake_up(task,1); 
+	
+	if(task->state & TASK_UNINTERRUPTIBLE)
+	{	printk(KERN_ALERT "\nProcess is in Uniterruptible Wait-DeepSleep!!"); // Info to User	
+	wake_up_state(task,TASK_INTERRUPTIBLE); 
+	}
+	wake_up_process(task);//Double wake up not be needed for Deepsleep
 	ret=0;		
 	return_path:
 	unlock_task_sighand(task,&flags);
