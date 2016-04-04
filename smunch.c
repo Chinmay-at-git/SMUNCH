@@ -42,7 +42,8 @@ SYSCALL_DEFINE2(smunch,int,pid,unsigned long,bit_pattern)
 	
 	if(task->state & TASK_UNINTERRUPTIBLE)
 	{	printk(KERN_ALERT "\nProcess is in Uniterruptible Wait-DeepSleep!!"); // Info to User	
-	wake_up_state(task,TASK_INTERRUPTIBLE);
+	//wake_up_state(task,TASK_INTERRUPTIBLE);
+	wake_up_process(task);
 	ret=0; goto return_path; 
 	}
 //	wake_up_process(task);//Ordinary Process!signal_wake_up may also work
